@@ -13,7 +13,7 @@ TOKEN = os.getenv("TELEGRAM_TOKEN")
 
 # 2. NOME DA SUA PLANILHA GOOGLE
 #    !! IMPORTANTE !! Substitua o texto abaixo pelo nome EXATO da sua planilha.
-NOME_DA_PLANILHA = "Nome da Sua Planilha" 
+NOME_DA_PLANILHA = "DinDinFinBOT" 
 
 # --- FUNÇÕES DO BOT ---
 
