@@ -65,7 +65,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     keyboard = [["/gasto", "/renda"], ["/resumo", "/extrato"], ["/categorias", "/ajuda"]]
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
     await update.message.reply_text(
-        'Olá! Bem-vindo ao seu Assistente Financeiro Ultimate!\n\n'
+        'Olá! Bem-vindo ao seu Assistente Financeiro !\n\n'
         'Use os botões para registrar transações, ver relatórios e gerenciar suas categorias.',
         reply_markup=reply_markup
     )
