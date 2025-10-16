@@ -8,6 +8,8 @@ Original file is located at
 """
 # main.py
 import os
+import gspread
+from datetime import datetime
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
@@ -21,10 +23,37 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Repete a mensagem do usuário."""
     await update.message.reply_text(f"Você disse: {update.message.text}")
+	
+async def teste_planilha(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    try:
+        # Informa ao usuário que está tentando
+        await update.message.reply_text("Testando conexão com a planilha, um momento...")
+
+        # Autentica usando o arquivo credentials.json
+        gc = gspread.service_account(filename='credentials.json')
+
+        # Abre a sua planilha pelo NOME EXATO que ela tem no Google Drive
+        # SUBSTITUA "Nome da Sua Planilha" PELO NOME REAL
+        planilha = gc.open("Nome da Sua Planilha").sheet1
+
+        # Adiciona uma linha de teste
+        linha_teste = ["Teste do Bot", "Conexão OK!", str(datetime.now())]
+        planilha.append_row(linha_teste)
+
+        # Envia mensagem de sucesso
+        await update.message.reply_text("✅ Sucesso! Uma nova linha foi adicionada à sua planilha.")
+
+    except Exception as e:
+        # Em caso de erro, informa o usuário e imprime o erro nos logs do Render
+        print(f"Erro ao conectar com a planilha: {e}")
+        await update.message.reply_text(f"❌ Falha ao conectar com a planilha. Verifique os logs. Erro: {e}")
 
 def main() -> None:
     """Inicia o bot."""
     application = Application.builder().token(TOKEN).build()
+	
+	# Adicione o novo handler para o comando de teste
+    application.add_handler(CommandHandler("DinDinFinBOT", teste_planilha))
 
     # Comandos
     application.add_handler(CommandHandler("start", start))
