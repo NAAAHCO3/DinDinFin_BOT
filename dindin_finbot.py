@@ -27,8 +27,8 @@ app = Flask(__name__)
 
 @app.route('/')
 def health_check():
-    """Esta rota responde ao Render para dizer que o bot está vivo."""
-    return "Bot financeiro está vivo e rodando!", 200
+    """Esta rota responde ao Render com uma mensagem mínima."""
+    return "OK", 200
 
 def run_flask():
     """Inicia o servidor Flask em uma porta definida pelo Render."""
