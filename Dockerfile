@@ -3,5 +3,6 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
-# Roda o nosso servidor Flask + Bot
+# Porta padrão do Cloud Run
+ENV PORT 8080
 CMD ["python", "main.py"]
