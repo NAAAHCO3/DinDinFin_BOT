@@ -9,7 +9,7 @@ from config import SHEET_NAME, ABAS
 
 repo = SheetsRepository(SHEET_NAME)
 
-# Nomes padronizados para os handlers
+# Use exatamente estes nomes para bater com os imports dos handlers
 transaction_service = TransactionService(repo, ABAS)
 category_service = CategoryService(repo, ABAS)
 account_service = AccountService(repo, ABAS)
@@ -17,7 +17,8 @@ budget_service = BudgetService(repo, ABAS)
 ml_service = MLService()
 export_service = ExportService()
 
-# Mantendo compatibilidade com imports antigos se houver
+# Mantendo apelidos para compatibilidade com outros arquivos
 ts = transaction_service
 cs = category_service
 as_svc = account_service
+bs = budget_service
