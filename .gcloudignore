@@ -1,0 +1,10 @@
+.git
+.gitignore
+node_modules
+venv
+.env
+__pycache__
+*.pyc
+# Ignora pastas do Windows que causaram o erro
+AppData
+Local Settings
