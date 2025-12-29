@@ -1,4 +1,3 @@
-# repositories/sheets_repository.py
 import gspread
 import os
 import json
@@ -6,16 +5,21 @@ from google.oauth2.service_account import Credentials
 
 class SheetsRepository:
     def __init__(self, sheet_name):
-        scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-        
-        # Lê o JSON de credenciais da variável de ambiente injetada pelo Cloud Run
-        env_creds = os.getenv("GCP_CREDENTIALS_JSON")
-        
-        if env_creds:
-            info = json.loads(env_creds)
-            creds = Credentials.from_service_account_info(info, scopes=scopes)
-        else:
-            creds = Credentials.from_service_account_file("credentials.json", scopes=scopes)
+        self.sheet_name = sheet_name
+        self.scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+        self._sheet = None # Não abre a conexão ainda
+
+    @property
+    def sheet(self):
+        """Abre a planilha apenas quando for realmente necessária (Lazy Loading)"""
+        if self._sheet is None:
+            env_creds = os.getenv("GCP_CREDENTIALS_JSON")
+            if env_creds:
+                info = json.loads(env_creds)
+                creds = Credentials.from_service_account_info(info, scopes=self.scopes)
+            else:
+                creds = Credentials.from_service_account_file("credentials.json", scopes=self.scopes)
             
-        self.client = gspread.authorize(creds)
-        self.sheet = self.client.open(sheet_name) # Abre a planilha compartilhada
+            client = gspread.authorize(creds)
+            self._sheet = client.open(self.sheet_name)
+        return self._sheet

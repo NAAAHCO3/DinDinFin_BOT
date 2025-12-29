@@ -12,6 +12,9 @@ from telegram.ext import (
     filters
 )
 
+# IMPORTANTE: Importar os serviços do seu novo container central
+from core.container import transaction_service, category_service, account_service, budget_service
+
 # ================================
 # Estados da Conversa
 # ================================
@@ -26,27 +29,27 @@ async def iniciar_gasto(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("💸 Informe o valor do gasto:")
     return VALOR
 
-
 async def iniciar_renda(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.clear()
     context.user_data["tipo"] = "renda"
-    await update.message.reply_text("💵 Informe o valor da renda:")
+    await update.message.reply_text("💰 Informe o valor da renda:")
     return VALOR
-
 
 # ================================
 # Valor
 # ================================
 async def receber_valor(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        valor = float(update.message.text.replace(",", "."))
+        valor_texto = update.message.text.replace(".", "").replace(",", ".")
+        valor = float(valor_texto)
         if valor <= 0:
             raise ValueError
         context.user_data["valor"] = valor
     except ValueError:
-        await update.message.reply_text("❌ Digite um valor numérico válido.")
+        await update.message.reply_text("❌ Digite um valor numérico válido (ex: 50,00).")
         return VALOR
 
+    # Busca categorias do serviço centralizado
     categorias = category_service.listar(update.effective_user.id)
 
     if not categorias:
@@ -56,17 +59,13 @@ async def receber_valor(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return ConversationHandler.END
 
-    teclado = [
-        [InlineKeyboardButton(c, callback_data=c)]
-        for c in categorias
-    ]
+    teclado = [[InlineKeyboardButton(c, callback_data=c)] for c in categorias]
 
     await update.message.reply_text(
         "📂 Escolha a categoria:",
         reply_markup=InlineKeyboardMarkup(teclado)
     )
     return CATEGORIA
-
 
 # ================================
 # Categoria
@@ -77,6 +76,7 @@ async def receber_categoria(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     context.user_data["categoria"] = query.data
 
+    # Busca contas do serviço centralizado
     contas = account_service.listar(update.effective_user.id)
 
     if not contas:
@@ -86,17 +86,13 @@ async def receber_categoria(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return ConversationHandler.END
 
-    teclado = [
-        [InlineKeyboardButton(c, callback_data=c)]
-        for c in contas
-    ]
+    teclado = [[InlineKeyboardButton(c, callback_data=c)] for c in contas]
 
     await query.edit_message_text(
-        "🏦 Escolha a conta:",
+        "💳 Escolha a conta:",
         reply_markup=InlineKeyboardMarkup(teclado)
     )
     return CONTA
-
 
 # ================================
 # Conta
@@ -108,10 +104,9 @@ async def receber_conta(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["conta"] = query.data
 
     await query.edit_message_text(
-        "📝 Digite uma descrição (ou 'nenhuma'):"
+        "📝 Digite uma descrição (ou envie 'nenhuma'):"
     )
     return DESCRICAO
-
 
 # ================================
 # Descrição + Persistência
@@ -123,6 +118,7 @@ async def receber_descricao(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user_id = update.effective_user.id
 
+    # Registra a transação usando o serviço global
     transaction_service.registrar(
         user_id=user_id,
         tipo=context.user_data["tipo"],
@@ -132,9 +128,7 @@ async def receber_descricao(update: Update, context: ContextTypes.DEFAULT_TYPE):
         descricao=descricao
     )
 
-    # ================================
-    # ALERTA DE ORÇAMENTO
-    # ================================
+    # Verificação de Orçamento
     df = transaction_service.df_usuario(user_id)
     gastos = df[df["tipo"] == "gasto"]
     alertas = budget_service.alertas(user_id, gastos)
@@ -147,9 +141,7 @@ async def receber_descricao(update: Update, context: ContextTypes.DEFAULT_TYPE):
             msg += f"\n• {c}"
 
     await update.message.reply_text(msg, parse_mode="Markdown")
-
     return ConversationHandler.END
-
 
 # ================================
 # Handler Unificado
@@ -165,5 +157,5 @@ transaction_conversation = ConversationHandler(
         CONTA: [CallbackQueryHandler(receber_conta)],
         DESCRICAO: [MessageHandler(filters.TEXT & ~filters.COMMAND, receber_descricao)],
     },
-    fallbacks=[],
+    fallbacks=[CommandHandler("cancel", lambda u, c: ConversationHandler.END)],
 )

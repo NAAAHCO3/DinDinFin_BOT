@@ -1,14 +1,17 @@
 # handlers/report_handlers.py
+from telegram import Update
+from telegram.ext import ContextTypes
+from core.container import ts  # <--- IMPORTAÇÃO CORRETA
 
-async def resumo(update, context):
+async def resumo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Gera um resumo simples dos gastos e rendas."""
     user_id = update.effective_user.id
     try:
-        from app import ts # Importação local do transaction_service
+        # Puxa o dataframe usando o serviço do container global
         df = ts.df_usuario(user_id)
         
         if df.empty:
-            await update.message.reply_text("📊 Você ainda não possui transações registradas.")
+            await update.message.reply_text("🔎 Você ainda não possui transações registradas.")
             return
 
         total_gastos = df[df['tipo'] == 'gasto']['valor'].sum()
@@ -18,9 +21,9 @@ async def resumo(update, context):
         mensagem = (
             "📊 *Resumo Financeiro Geral*\n\n"
             f"💰 Renda Total: R$ {total_renda:.2f}\n"
-            f"💸 Gastos Totais: R$ {total_gastos:.2f}\n"
+            f"📉 Gastos Totais: R$ {total_gastos:.2f}\n"
             "----------------------------\n"
-            f"💵 *Saldo Atual: R$ {saldo:.2f}*"
+            f"🏁 *Saldo Atual: R$ {saldo:.2f}*"
         )
         await update.message.reply_text(mensagem, parse_mode='Markdown')
     except Exception as e:
