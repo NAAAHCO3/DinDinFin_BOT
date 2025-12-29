@@ -18,4 +18,5 @@ def start_bot():
     application.add_handler(CommandHandler("resumo", resumo))
 
     # Isso mantém o bot vivo buscando mensagens
-    application.run_polling()
+   application.run_polling(stop_signals=None)
+	
