@@ -1,6 +1,7 @@
 # handlers/admin_handlers.py
 from telegram import Update
 from telegram.ext import ContextTypes
+from core.container import category_service, account_service
 
 async def add_categoria(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handler para adicionar categoria"""

@@ -8,9 +8,16 @@ from services.export_service import ExportService
 from config import SHEET_NAME, ABAS
 
 repo = SheetsRepository(SHEET_NAME)
-ts = TransactionService(repo, ABAS)
-cs = CategoryService(repo, ABAS)
-as_svc = AccountService(repo, ABAS)
-bs = BudgetService(repo, ABAS)
-mls = MLService()
-es = ExportService()
+
+# Nomes padronizados para os handlers
+transaction_service = TransactionService(repo, ABAS)
+category_service = CategoryService(repo, ABAS)
+account_service = AccountService(repo, ABAS)
+budget_service = BudgetService(repo, ABAS)
+ml_service = MLService()
+export_service = ExportService()
+
+# Mantendo compatibilidade com imports antigos se houver
+ts = transaction_service
+cs = category_service
+as_svc = account_service
