@@ -7,14 +7,15 @@ from handlers.transaction_handlers import transaction_conversation
 from handlers.admin_handlers import add_categoria, add_conta
 from handlers.report_handlers import resumo
 
-def start_bot():
+async def setup_bot():
     application = Application.builder().token(BOT_TOKEN).build()
-
+    
     # Registro de Handlers
     application.add_handler(CommandHandler("start", lambda u, c: u.message.reply_text("Bot Online!")))
     application.add_handler(transaction_conversation)
     application.add_handler(CommandHandler("add_categoria", add_categoria))
     application.add_handler(CommandHandler("add_conta", add_conta))
     application.add_handler(CommandHandler("resumo", resumo))
-
-    application.run_polling()
+    
+    await application.initialize()
+    return application
