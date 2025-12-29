@@ -2,4 +2,5 @@ python-telegram-bot
 gspread
 google-auth
 pandas
+scikit-learn
 functions-framework
