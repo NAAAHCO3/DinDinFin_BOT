@@ -36,4 +36,32 @@ async def resumo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         mensagem = (
             "📊 *Resumo Financeiro Geral*\n\n"
-            f
+            f"💰 *Renda Total:* R$ {total_renda:,.2f}\n"
+            f"📉 *Gastos Totais:* R$ {total_gastos:,.2f}\n"
+            "────────────────────\n"
+            f"🏁 *Saldo Atual:* R$ {saldo:,.2f}"
+        )
+
+        await _responder(update, mensagem)
+
+    except Exception as e:
+        # Ideal: logar o erro (logger.error)
+        await _responder(
+            update,
+            "❌ *Não foi possível gerar o resumo agora.*\n"
+            "Tente novamente em instantes."
+        )
+
+
+# =========================
+# UTILITÁRIO DE RESPOSTA
+# =========================
+async def _responder(update: Update, texto: str):
+    """Responde corretamente tanto para mensagem quanto callback."""
+    if update.message:
+        await update.message.reply_text(texto, parse_mode="Markdown")
+    elif update.callback_query:
+        await update.callback_query.edit_message_text(
+            texto,
+            parse_mode="Markdown"
+        )
