@@ -1,27 +1,35 @@
-# handlers/admin_handlers.py
 from telegram import Update
 from telegram.ext import ContextTypes
-from core.container import category_service, account_service
+from core.container import as_svc, cs # Importa os serviços do container
 
 async def add_categoria(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handler para adicionar categoria"""
-    await update.message.reply_text("Funcionalidade de categoria em desenvolvimento.")
+    """Adiciona categoria real na planilha"""
+    user_id = update.effective_user.id
+    if not context.args:
+        await update.message.reply_text("❌ Use: /add_categoria Nome")
+        return
+    
+    nome_cat = " ".join(context.args)
+    try:
+        cs.adicionar(user_id, nome_cat) # Chama o método correto do category_service
+        await update.message.reply_text(f"✅ Categoria '{nome_cat}' adicionada!")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Erro: {e}")
 
 async def add_conta(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Adiciona uma nova conta. Ex: /add_conta Nubank 1000"""
+    """Adiciona conta real na planilha"""
     user_id = update.effective_user.id
     try:
-        dados = context.args
-        if len(dados) < 2:
-            await update.message.reply_text("❌ Use: /add_conta Nome Saldo\nEx: /add_conta Nubank 1500")
+        if len(context.args) < 2:
+            await update.message.reply_text("❌ Use: /add_conta Nome Saldo")
             return
 
-        nome_conta = dados[0]
-        saldo_inicial = float(dados[1])
+        nome_conta = context.args[0]
+        saldo = float(context.args[1].replace(",", "."))
 
-        from core.container import as_svc
-        as_svc.adicionar_conta(user_id, nome_conta, saldo_inicial)
+        # CORREÇÃO AQUI: Mudado de adicionar_conta para criar
+        as_svc.criar(user_id, nome_conta, saldo)
 
-        await update.message.reply_text(f"✅ Conta '{nome_conta}' registrada com saldo de R$ {saldo_inicial:.2f}!")
+        await update.message.reply_text(f"✅ Conta '{nome_conta}' registrada!")
     except Exception as e:
         await update.message.reply_text(f"❌ Erro ao adicionar conta: {e}")

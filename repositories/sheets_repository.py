@@ -1,25 +1,26 @@
 import gspread
-import os
-import json
 from google.oauth2.service_account import Credentials
 
 class SheetsRepository:
     def __init__(self, sheet_name):
-        self.sheet_name = sheet_name
-        self.scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-        self._sheet = None # Não abre a conexão ainda
+        scopes = [
+            "https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/drive"
+        ]
+        # O arquivo de credenciais deve estar na raiz
+        creds = Credentials.from_service_account_file(
+            "credentials.json", scopes=scopes
+        )
+        self.client = gspread.authorize(creds)
+        self.sheet = self.client.open(sheet_name)
 
-    @property
-    def sheet(self):
-        """Abre a planilha apenas quando for realmente necessária (Lazy Loading)"""
-        if self._sheet is None:
-            env_creds = os.getenv("GCP_CREDENTIALS_JSON")
-            if env_creds:
-                info = json.loads(env_creds)
-                creds = Credentials.from_service_account_info(info, scopes=self.scopes)
-            else:
-                creds = Credentials.from_service_account_file("credentials.json", scopes=self.scopes)
-            
-            client = gspread.authorize(creds)
-            self._sheet = client.open(self.sheet_name)
-        return self._sheet
+    def get_aba(self, nome_aba):
+        return self.sheet.worksheet(nome_aba)
+
+    def all(self, nome_aba):
+        """Lê todos os registros de uma aba (Essencial para os Services)"""
+        return self.get_aba(nome_aba).get_all_records()
+
+    def append(self, nome_aba, linha):
+        """Adiciona uma nova linha na aba especificada"""
+        return self.get_aba(nome_aba).append_row(linha)
