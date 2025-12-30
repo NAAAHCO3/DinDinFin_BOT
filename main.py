@@ -1,30 +1,72 @@
 import os
 import logging
 from threading import Thread
-from flask import Flask
+from flask import Flask, jsonify
 from app import start_bot
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# ============================
+# LOGGING
+# ============================
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+)
+logger = logging.getLogger("DinDinFin")
 
+
+# ============================
+# FLASK APP (Health Check)
+# ============================
 app = Flask(__name__)
 
-@app.route("/")
+
+@app.route("/", methods=["GET"])
 def health_check():
-    return "OK", 200
+    """
+    Endpoint exigido pelo Cloud Run para verificar
+    se o container está saudável.
+    """
+    return jsonify(
+        status="ok",
+        service="DinDinFinBOT"
+    ), 200
+
 
 def run_flask():
-    """Roda o Flask em segundo plano para o GCP validar o deploy"""
+    """Roda o Flask em thread separada"""
     port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
+    logger.info(f"Iniciando Flask (health check) na porta {port}")
 
+    app.run(
+        host="0.0.0.0",
+        port=port,
+        debug=False,
+        use_reloader=False
+    )
+
+
+# ============================
+# ENTRYPOINT
+# ============================
 if __name__ == "__main__":
-    # 1. Inicia o Flask em uma thread separada
-    Thread(target=run_flask, daemon=True).start()
-    
-    # 2. Inicia o bot na thread principal (Obrigatório para evitar erros de sinal)
+    # 1️⃣ Flask em background (Cloud Run precisa disso)
+    flask_thread = Thread(
+        target=run_flask,
+        name="FlaskThread",
+        daemon=True
+    )
+    flask_thread.start()
+
+    # 2️⃣ Bot na thread principal (OBRIGATÓRIO)
     try:
-        logger.info("Iniciando bot na thread principal...")
+        logger.info("🚀 Iniciando Telegram Bot (thread principal)")
         start_bot()
+
+    except KeyboardInterrupt:
+        logger.info("⛔ Encerramento manual detectado")
+
     except Exception as e:
-        logger.error(f"Erro fatal no bot: {e}")
+        logger.exception("🔥 Erro fatal no bot")
+
+    finally:
+        logger.info("🛑 Processo finalizado")

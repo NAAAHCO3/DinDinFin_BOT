@@ -1,31 +1,67 @@
-# services/ml_service.py
+import logging
+from typing import Optional, Any
+
 import numpy as np
 from sklearn.linear_model import LinearRegression
-import logging
 
 logger = logging.getLogger(__name__)
 
+
 class MLService:
-    def prever_proximo_gasto(self, df, categoria):
-        """Usa regressão linear para prever o próximo gasto baseado no histórico."""
+    """
+    Serviço de Machine Learning simples para previsão de gastos.
+    """
+
+    MIN_PONTOS = 3
+
+    def prever_proximo_gasto(self, df, categoria: Any) -> Optional[float]:
+        """
+        Usa regressão linear simples para prever o próximo gasto
+        com base no histórico da categoria.
+
+        Retorna:
+            Valor previsto (float) ou None se não for possível prever
+        """
         try:
-            df_cat = df[df["categoria"] == categoria].sort_values("data")
-            
-            if len(df_cat) < 3: # Mínimo de 3 pontos para uma tendência simples
+            if df is None or df.empty:
                 return None
 
-            # Transforma datas em números ordinais para o modelo
+            colunas_necessarias = {"categoria", "valor", "data"}
+            if not colunas_necessarias.issubset(df.columns):
+                logger.warning("DataFrame inválido para ML")
+                return None
+
+            df_cat = (
+                df[df["categoria"] == categoria]
+                .sort_values("data")
+                .copy()  # ⚠️ não altera o DF original
+            )
+
+            if len(df_cat) < self.MIN_PONTOS:
+                return None
+
+            # Remove valores inválidos
+            df_cat = df_cat.dropna(subset=["valor"])
+            if df_cat["valor"].nunique() < 2:
+                return None  # sem tendência possível
+
+            # Índice temporal simples
             df_cat["t"] = np.arange(len(df_cat))
-            X = df_cat[["t"]]
-            y = df_cat["valor"]
+
+            X = df_cat[["t"]].values
+            y = df_cat["valor"].values
 
             model = LinearRegression()
             model.fit(X, y)
 
             proximo_indice = len(df_cat)
-            previsao = model.predict([[proximo_indice]])[0]
-            
-            return max(0, previsao) # Nunca retorna gasto negativo
-        except Exception as e:
-            logger.error(f"Erro na predição de ML: {e}")
+            previsao = float(model.predict([[proximo_indice]])[0])
+
+            # Nunca retorna gasto negativo
+            return max(0.0, previsao)
+
+        except Exception:
+            logger.exception(
+                "Erro ao prever gasto | categoria=%s", categoria
+            )
             return None
