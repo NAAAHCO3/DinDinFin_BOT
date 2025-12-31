@@ -1,7 +1,19 @@
+# Essencial para rodar rotas 'async def' no Flask
+flask[async]==3.0.0
+
+# O motor do seu Bot (v20.7 é excelente e estável)
 python-telegram-bot==20.7
-flask==3.0.0
+
+# Processamento de dados e Planilhas
 pandas==2.1.4
 gspread==6.0.0
 google-auth==2.25.2
+
+# Inteligência Artificial e Predições
 scikit-learn==1.3.2
+
+# Servidor de produção para o Cloud Run
 gunicorn==21.2.0
+
+# Necessário para o Flask[async] funcionar internamente
+asgiref>=3.7.2

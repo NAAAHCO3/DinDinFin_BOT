@@ -42,14 +42,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     texto_boas_vindas = (
         "🚀 *DinDinFin PRO*\n"
         "Seu assistente financeiro inteligente.\n\n"
-        "Utilize o menu abaixo para gerenciar suas finanças de forma rápida:"
+        "Utilize o menu abaixo para gerenciar suas finanças:"
     )
     
-    await update.message.reply_text(
-        texto_boas_vindas, 
-        reply_markup=reply_markup, 
-        parse_mode='Markdown'
-    )
+    # No Webhook, o update pode vir de uma mensagem ou de um clique em botão (callback)
+    if update.message:
+        await update.message.reply_text(texto_boas_vindas, reply_markup=reply_markup, parse_mode='Markdown')
+    elif update.callback_query:
+        await update.callback_query.message.reply_text(texto_boas_vindas, reply_markup=reply_markup, parse_mode='Markdown')
 
 async def processar_botoes_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Gerencia os cliques nos botões do menu principal."""
@@ -66,37 +66,22 @@ async def processar_botoes_menu(update: Update, context: ContextTypes.DEFAULT_TY
         await query.message.reply_text("⚙️ *Configurações:*\nUse /add_categoria ou /add_conta", parse_mode='Markdown')
 
 # ============================
-# BOOTSTRAP DO BOT
+# CONFIGURAÇÃO DO BOT (PARA WEBHOOK)
 # ============================
-def start_bot():
+def setup_application():
+    """Configura e retorna a aplicação sem iniciar o polling."""
     if not BOT_TOKEN:
         raise RuntimeError("BOT_TOKEN não definido")
 
-    logger.info("Iniciando Telegram Bot...")
+    # Inicializa a aplicação configurada para receber updates via Webhook
+    application = Application.builder().token(BOT_TOKEN).updater(None).build()
 
-    application = Application.builder().token(BOT_TOKEN).build()
-
-    # Menu Principal
+    # Registro de Handlers
     application.add_handler(CommandHandler("start", start))
-    
-    # Handler para capturar cliques nos botões do Menu Principal
     application.add_handler(CallbackQueryHandler(processar_botoes_menu, pattern="^menu_"))
-
-    # Fluxo de Conversação (Gasto/Renda)
     application.add_handler(transaction_conversation)
-
-    # Comandos Administrativos
     application.add_handler(CommandHandler("add_categoria", add_categoria))
     application.add_handler(CommandHandler("add_conta", add_conta))
-
-    # Comando direto de Resumo
     application.add_handler(CommandHandler("resumo", resumo))
 
-    logger.info("Bot iniciado e aguardando interações.")
-    application.run_polling(stop_signals=None)
-
-if __name__ == "__main__":
-    try:
-        start_bot()
-    except Exception:
-        logger.exception("Falha crítica ao iniciar o bot")
+    return application

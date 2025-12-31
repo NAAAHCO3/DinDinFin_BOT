@@ -1,72 +1,43 @@
 import os
-import logging
-from threading import Thread
-from flask import Flask, jsonify
-from app import start_bot
 
-# ============================
-# LOGGING
-# ============================
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s"
-)
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "").strip()
+
+if not BOT_TOKEN:
+    raise RuntimeError("BOT_TOKEN não definido")
+
+import logging
+from flask import Flask, request
+from telegram import Update
+from app import setup_application
+import asyncio
+
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("DinDinFin")
 
-
-# ============================
-# FLASK APP (Health Check)
-# ============================
 app = Flask(__name__)
-
+bot_app = setup_application()
 
 @app.route("/", methods=["GET"])
-def health_check():
-    """
-    Endpoint exigido pelo Cloud Run para verificar
-    se o container está saudável.
-    """
-    return jsonify(
-        status="ok",
-        service="DinDinFinBOT"
-    ), 200
+def health():
+    return "OK", 200
 
-
-def run_flask():
-    """Roda o Flask em thread separada"""
-    port = int(os.environ.get("PORT", 8080))
-    logger.info(f"Iniciando Flask (health check) na porta {port}")
-
-    app.run(
-        host="0.0.0.0",
-        port=port,
-        debug=False,
-        use_reloader=False
-    )
-
-
-# ============================
-# ENTRYPOINT
-# ============================
-if __name__ == "__main__":
-    # 1️⃣ Flask em background (Cloud Run precisa disso)
-    flask_thread = Thread(
-        target=run_flask,
-        name="FlaskThread",
-        daemon=True
-    )
-    flask_thread.start()
-
-    # 2️⃣ Bot na thread principal (OBRIGATÓRIO)
+@app.route("/webhook", methods=["POST"])
+def webhook():
     try:
-        logger.info("🚀 Iniciando Telegram Bot (thread principal)")
-        start_bot()
+        data = request.get_json(force=True)
+        update = Update.de_json(data, bot_app.bot)
 
-    except KeyboardInterrupt:
-        logger.info("⛔ Encerramento manual detectado")
+        async def process():
+            await bot_app.initialize()
+            await bot_app.process_update(update)
+
+        asyncio.run(process())
+        return "OK", 200
 
     except Exception as e:
-        logger.exception("🔥 Erro fatal no bot")
+        logger.exception("Erro no webhook")
+        return "Error", 500
 
-    finally:
-        logger.info("🛑 Processo finalizado")
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)
