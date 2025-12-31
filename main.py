@@ -1,9 +1,9 @@
 import os
 
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "").strip()
+token = os.getenv("BOT_TOKEN")
 
-if not BOT_TOKEN:
-    raise RuntimeError("BOT_TOKEN não definido")
+print("TOKEN REPR:", repr(token))
+
 
 import logging
 from flask import Flask, request
